@@ -1,76 +1,105 @@
-package sequential
-
-import (
-	"image/color"
-)
+package parallel
 
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/gif"
 	"math"
 	"math/cmplx"
 	"os"
-
-	"../palette"
+	"runtime"
+	"sync"
 )
 
 const (
-	screenWidth    = 1280
-	aspectRatio    = 5 / 4
 	noOfIterations = 1000
 	escapeRadius   = 200
 )
 
 type work struct {
-	scale
-	realMin
-	imagMin
+	frameNo int
+	scale   float64
+	realMin float64
+	imagMin float64
+	wg      *sync.WaitGroup
 }
 
-func Run(colorPalette color.Palette, frame int) {
-
-	finishedTasks := func(ch chan<- work) chan work {
-		done := make(chan work, frames)
-		for i:= 0; i < runtime.RunCPU(); i++{
-		go workThread(done)
-		}
-	}
-}
+func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle) {
 
 	outGIF := &gif.GIF{}
+	images := make([]*image.Paletted, frames)
+
+	workPile := make(chan work, frames)
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func(workChannel <-chan work) {
+			for {
+				work, hasMore := <-workChannel
+				if hasMore {
+					img := image.NewPaletted(imageFrame, colorPalette)
+					for x := 0; x < imageFrame.Max.X; x++ {
+						for y := 0; y < imageFrame.Max.Y; y++ {
+
+							i := mandelbrot(complex(float64(x)/work.scale+work.realMin, float64(y)/work.scale+work.imagMin))
+							colIndex := uint8(i * float64(len(colorPalette)-1))
+							img.SetColorIndex(x, y, colIndex)
+						}
+					}
+					images[work.frameNo] = img
+					outGIF.Delay = append(outGIF.Delay, 0)
+					work.wg.Done()
+				} else {
+					break
+				}
+			}
+		}(workPile)
+	}
 
 	realMin := -2.
 	realMax := .5
 	imagMin := -1.
-	imagMax := 1.
-	counter := 0
-	scale := screenWidth / (realMax - realMin)
-	screenHeight := int(scale * (imagMax - imagMin))
-	colorPalette := palette.Vivid()
+	scale := float64(imageFrame.Max.X) / (realMax - realMin)
 
-	for counter < 40 {
-		bounds := image.Rect(0, 0, screenWidth, screenHeight)
-		img := image.NewPaletted(bounds, colorPalette)
-		for x := 0; x < screenWidth; x++ {
-			for y := 0; y < screenHeight; y++ {
-				i := mandelbrot(complex(float64(x)/scale+realMin, float64(y)/scale+imagMin))
-				colIndex := uint8(i * float64(len(colorPalette)-1))
-				img.SetColorIndex(x, y, colIndex)
-			}
-		}
-
-		outGIF.Image = append(outGIF.Image, img)
-		outGIF.Delay = append(outGIF.Delay, 0)
-		counter++
-
+	var wg sync.WaitGroup
+	for i := 0; i < frames; i++ {
+		wg.Add(1)
+		work := work{frameNo: i, scale: scale, realMin: realMin, imagMin: imagMin, wg: &wg}
+		workPile <- work
 		realMin += (1. / (scale * 0.025))
 		imagMin += (1. / (scale * 0.025))
 		scale *= 1.05
 	}
+	// outer:
+	// 	for {
+	// 		select {
+	// 		case work := <-workPile:
+	// 			img := image.NewPaletted(imageFrame, colorPalette)
+	// 			for x := 0; x < imageFrame.Max.X; x++ {
+	// 				for y := 0; y < imageFrame.Max.Y; y++ {
 
-	f, _ := os.Create("giffy.gif")
-	gif.EncodeAll(f, outGIF)
+	// 					i := mandelbrot(complex(float64(x)/work.scale+work.realMin, float64(y)/work.scale+work.imagMin))
+	// 					colIndex := uint8(i * float64(len(colorPalette)-1))
+	// 					img.SetColorIndex(x, y, colIndex)
+	// 				}
+	// 			}
+	// 			outGIF.Image[work.frameNo] = img
+	// 			file, _ := os.Create("mandelbrot" + strconv.Itoa(work.frameNo) + ".gif")
+	// 			png.Encode(file, img)
+	// 			work.wg.Done()
+	// 			fmt.Println(len(workPile))
+	// 		default:
+	// 			fmt.Println(len(workPile))
+	// 			wg.Wait()
+	// 			break outer
+	// 		}
+	// 	}
+
+	wg.Wait()
+
+	outGIF.Image = images
+	file, _ := os.Create("poop.gif")
+	fmt.Println(outGIF)
+	gif.EncodeAll(file, outGIF)
 }
 
 func mandelbrot(c complex128) float64 {

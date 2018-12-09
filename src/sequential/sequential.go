@@ -1,7 +1,6 @@
 package sequential
 
 import (
-	"fmt"
 	"image"
 	"image/gif"
 	"math"
@@ -34,7 +33,6 @@ func Run() {
 	for counter < 40 {
 		bounds := image.Rect(0, 0, screenWidth, screenHeight)
 		img := image.NewPaletted(bounds, colorPalette)
-		fmt.Println(scale)
 		for x := 0; x < screenWidth; x++ {
 			for y := 0; y < screenHeight; y++ {
 				i := mandelbrot(complex(float64(x)/scale+realMin, float64(y)/scale+imagMin))
