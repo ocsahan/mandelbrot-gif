@@ -24,7 +24,7 @@ type work struct {
 	wg      *sync.WaitGroup
 }
 
-func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle) {
+func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, destX float64, destY float64) {
 
 	outGIF := &gif.GIF{}
 	images := make([]*image.Paletted, frames)
@@ -57,14 +57,19 @@ func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle) {
 	realMax := .5
 	imagMin := -1.
 	scale := float64(imageFrame.Max.X) / (realMax - realMin)
+	easeOut := 0.98
+	dX := math.Abs(destX-realMin) * (1. - easeOut) / (1. - math.Pow(easeOut, float64(frames)))
+	dY := math.Abs(destY-imagMin) * (1. - easeOut) / (1. - math.Pow(easeOut, float64(frames)))
 
 	var wg sync.WaitGroup
 	for i := 0; i < frames; i++ {
 		wg.Add(1)
 		work := work{frameNo: i, scale: scale, realMin: realMin, imagMin: imagMin, wg: &wg}
 		workPile <- work
-		realMin += (1. / (scale * 0.07))
-		imagMin += (1. / (scale * 0.07))
+		realMin += dX
+		imagMin += dY
+		dX *= easeOut
+		dY *= easeOut
 		scale *= 1.02
 	}
 
