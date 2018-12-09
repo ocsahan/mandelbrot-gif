@@ -1,7 +1,6 @@
 package parallel
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/gif"
@@ -46,7 +45,6 @@ func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle) {
 						}
 					}
 					images[work.frameNo] = img
-					outGIF.Delay = append(outGIF.Delay, 0)
 					work.wg.Done()
 				} else {
 					break
@@ -65,40 +63,38 @@ func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle) {
 		wg.Add(1)
 		work := work{frameNo: i, scale: scale, realMin: realMin, imagMin: imagMin, wg: &wg}
 		workPile <- work
-		realMin += (1. / (scale * 0.025))
-		imagMin += (1. / (scale * 0.025))
-		scale *= 1.05
+		realMin += (1. / (scale * 0.07))
+		imagMin += (1. / (scale * 0.07))
+		scale *= 1.02
 	}
-	// outer:
-	// 	for {
-	// 		select {
-	// 		case work := <-workPile:
-	// 			img := image.NewPaletted(imageFrame, colorPalette)
-	// 			for x := 0; x < imageFrame.Max.X; x++ {
-	// 				for y := 0; y < imageFrame.Max.Y; y++ {
 
-	// 					i := mandelbrot(complex(float64(x)/work.scale+work.realMin, float64(y)/work.scale+work.imagMin))
-	// 					colIndex := uint8(i * float64(len(colorPalette)-1))
-	// 					img.SetColorIndex(x, y, colIndex)
-	// 				}
-	// 			}
-	// 			outGIF.Image[work.frameNo] = img
-	// 			file, _ := os.Create("mandelbrot" + strconv.Itoa(work.frameNo) + ".gif")
-	// 			png.Encode(file, img)
-	// 			work.wg.Done()
-	// 			fmt.Println(len(workPile))
-	// 		default:
-	// 			fmt.Println(len(workPile))
-	// 			wg.Wait()
-	// 			break outer
-	// 		}
-	// 	}
+	outGIF.Delay = make([]int, frames)
+
+outer:
+	for {
+		select {
+		case work := <-workPile:
+			img := image.NewPaletted(imageFrame, colorPalette)
+			for x := 0; x < imageFrame.Max.X; x++ {
+				for y := 0; y < imageFrame.Max.Y; y++ {
+
+					i := mandelbrot(complex(float64(x)/work.scale+work.realMin, float64(y)/work.scale+work.imagMin))
+					colIndex := uint8(i * float64(len(colorPalette)-1))
+					img.SetColorIndex(x, y, colIndex)
+				}
+			}
+			images[work.frameNo] = img
+			work.wg.Done()
+		default:
+			wg.Wait()
+			break outer
+		}
+	}
 
 	wg.Wait()
 
 	outGIF.Image = images
 	file, _ := os.Create("poop.gif")
-	fmt.Println(outGIF)
 	gif.EncodeAll(file, outGIF)
 }
 
