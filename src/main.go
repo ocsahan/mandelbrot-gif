@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"runtime"
+	"strconv"
 
 	"./opencl"
 	"./palette"
@@ -23,7 +25,6 @@ func main() {
 	var threads = flag.Int("threads", -1, "Number of threads. Can only be used with -p=true flag. Value 0 will use the GPU.")
 
 	flag.Parse()
-	flag.PrintDefaults()
 
 	var colorPalette color.Palette
 	switch *colors {
@@ -46,12 +47,13 @@ func main() {
 	if *parallelism {
 		switch *threads {
 		case -1:
-			parallel.Run(colorPalette, *frame, imageFrame, *destX, *destY, *threads)
+			fmt.Println("Running parallelly with " + strconv.Itoa(runtime.NumCPU()) + " threads")
+			parallel.Run(colorPalette, *frame, imageFrame, *destX, *destY, runtime.NumCPU())
 		case 0:
+			fmt.Println("Running parallelly using the GPU(s).")
 			opencl.Run(colorPalette, *frame, imageFrame, *destX, *destY)
-			fmt.Println(*parallelism)
-			fmt.Println(*threads)
 		default:
+			fmt.Println("Running parallelly with " + strconv.Itoa(*threads) + "threads")
 			parallel.Run(colorPalette, *frame, imageFrame, *destX, *destY, *threads)
 		}
 	} else {
@@ -59,6 +61,7 @@ func main() {
 			flag.PrintDefaults()
 			return
 		}
+		fmt.Println("Running sequentially.")
 		sequential.Run(colorPalette, *frame, imageFrame, *destX, *destY)
 	}
 }
