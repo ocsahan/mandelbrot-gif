@@ -1,4 +1,4 @@
-package utils
+package palette
 
 import (
 	"image/color"
