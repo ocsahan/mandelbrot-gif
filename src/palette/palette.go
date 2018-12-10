@@ -30,7 +30,7 @@ func Vivid() color.Palette {
 		color.RGBA{0xf5, 0xca, 0xf7, 0xff}}
 }
 
-func Hippi() color.Palette {
+func Hippie() color.Palette {
 	return []color.Color{
 		color.RGBA{0x00, 0x04, 0x0f, 0xff},
 		color.RGBA{0x03, 0x26, 0x28, 0xff},

@@ -2,12 +2,11 @@ package sequential
 
 import (
 	"image"
+	"image/color"
 	"image/gif"
 	"math"
 	"math/cmplx"
 	"os"
-
-	"../palette"
 )
 
 const (
@@ -17,20 +16,21 @@ const (
 	escapeRadius   = 200
 )
 
-func Run() {
+func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, destX float64, destY float64) {
 
 	outGIF := &gif.GIF{}
+	screenWidth := imageFrame.Max.X
+	screenHeight := imageFrame.Max.Y
 
 	realMin := -2.
 	realMax := .5
 	imagMin := -1.
-	imagMax := 1.
-	counter := 0
-	scale := screenWidth / (realMax - realMin)
-	screenHeight := int(scale * (imagMax - imagMin))
-	colorPalette := palette.Vivid()
+	scale := float64(imageFrame.Max.X) / (realMax - realMin)
+	easeOut := 0.98
+	dX := math.Abs(destX-realMin) * (1. - easeOut) / (1. - math.Pow(easeOut, float64(frames)))
+	dY := math.Abs(destY-imagMin) * (1. - easeOut) / (1. - math.Pow(easeOut, float64(frames)))
 
-	for counter < 40 {
+	for frame := 0; frame < frames; frame++ {
 		bounds := image.Rect(0, 0, screenWidth, screenHeight)
 		img := image.NewPaletted(bounds, colorPalette)
 		for x := 0; x < screenWidth; x++ {
@@ -43,13 +43,13 @@ func Run() {
 
 		outGIF.Image = append(outGIF.Image, img)
 		outGIF.Delay = append(outGIF.Delay, 0)
-		counter++
 
-		realMin += (1. / (scale * 0.025))
-		imagMin += (1. / (scale * 0.025))
-		scale *= 1.05
+		realMin += dX
+		imagMin += dY
+		dX *= easeOut
+		dY *= easeOut
+		scale *= 1.02
 	}
-
 	f, _ := os.Create("giffy.gif")
 	gif.EncodeAll(f, outGIF)
 }

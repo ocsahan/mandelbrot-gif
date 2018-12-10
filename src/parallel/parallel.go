@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/cmplx"
 	"os"
-	"runtime"
 	"sync"
 )
 
@@ -24,13 +23,13 @@ type work struct {
 	wg      *sync.WaitGroup
 }
 
-func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, destX float64, destY float64) {
+func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, destX float64, destY float64, threads int) {
 
 	outGIF := &gif.GIF{}
 	images := make([]*image.Paletted, frames)
 
 	workPile := make(chan work, frames)
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; i < threads-1; i++ {
 		go func(workChannel <-chan work) {
 			for {
 				work, hasMore := <-workChannel
@@ -99,7 +98,7 @@ outer:
 	wg.Wait()
 
 	outGIF.Image = images
-	file, _ := os.Create("poop.gif")
+	file, _ := os.Create("giffy.gif")
 	gif.EncodeAll(file, outGIF)
 }
 

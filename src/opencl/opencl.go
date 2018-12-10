@@ -67,6 +67,7 @@ func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, des
 	availableDevices := make([]*cl.Device, 0)
 	for _, device := range devices {
 		if device.Available() {
+			fmt.Println("Available devices:")
 			fmt.Println(device.Name())
 			availableDevices = append(availableDevices, device)
 		}
@@ -131,7 +132,7 @@ func Run(colorPalette color.Palette, frames int, imageFrame image.Rectangle, des
 			queueOffset := []int{0, workPerQueue[1] * i}
 			absoluteOffset := queueOffset[1] * imageWidth
 
-			_, err := cmdQueues[i].EnqueueNDRangeKernel(kernel, queueOffset, []int{1440, 1152}, nil, nil)
+			_, err := cmdQueues[i].EnqueueNDRangeKernel(kernel, queueOffset, []int{imageWidth, imageHeight}, nil, nil)
 			if err != nil {
 				log.Fatal(err)
 			}
