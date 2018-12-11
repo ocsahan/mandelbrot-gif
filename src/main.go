@@ -47,13 +47,13 @@ func main() {
 	if *parallelism {
 		switch *threads {
 		case -1:
-			fmt.Println("Running parallelly with " + strconv.Itoa(runtime.NumCPU()) + " threads")
+			fmt.Println("Running parallelly with " + strconv.Itoa(runtime.NumCPU()) + " threads to produce " + strconv.Itoa(*frame) + " frames.")
 			parallel.Run(colorPalette, *frame, imageFrame, *destX, *destY, runtime.NumCPU())
 		case 0:
-			fmt.Println("Running parallelly using the GPU(s).")
+			fmt.Println("Running parallelly using the GPU(s) to produce " + strconv.Itoa(*frame) + " frames.")
 			opencl.Run(colorPalette, *frame, imageFrame, *destX, *destY)
 		default:
-			fmt.Println("Running parallelly with " + strconv.Itoa(*threads) + "threads")
+			fmt.Println("Running parallelly with " + strconv.Itoa(*threads) + " threads to produce " + strconv.Itoa(*frame) + " frames.")
 			parallel.Run(colorPalette, *frame, imageFrame, *destX, *destY, *threads)
 		}
 	} else {
@@ -61,7 +61,7 @@ func main() {
 			flag.PrintDefaults()
 			return
 		}
-		fmt.Println("Running sequentially.")
+		fmt.Println("Running sequentially to produce " + strconv.Itoa(*frame) + " frames.")
 		sequential.Run(colorPalette, *frame, imageFrame, *destX, *destY)
 	}
 }

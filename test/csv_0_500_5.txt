@@ -1,0 +1,5 @@
+test.sh: line 5: 82131 Abort trap: 6           ../src/main -frame $frame -p=true -threads $thread -resolution large
+
+real	1m19.096s
+user	0m0.530s
+sys	0m0.876s
